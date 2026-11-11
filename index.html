@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Quiz · Vírus Sounds</title>
+<link rel="icon" href="data:,">
+<style>
+@font-face{ font-family:'Montserrat'; src:url(assets/fonts/montserrat.woff2) format('woff2'); font-weight:100 900; font-style:normal; font-display:block; }
+@font-face{ font-family:'Montserrat'; src:url(assets/fonts/montserrat-italic.woff2) format('woff2'); font-weight:100 900; font-style:italic; font-display:block; }
+
+:root{ --fundo:#06120b; --verde:#26d84a; --verde-esc:#0b7a26; --vermelho:#e3262b; }
+*{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html,body{ width:100%; height:100%; overflow:hidden; background:var(--fundo); }
+body{ font-family:'Montserrat', Arial, sans-serif; color:#fff; user-select:none; -webkit-user-select:none; touch-action:manipulation; }
+
+#stage{ position:absolute; left:50%; top:50%; width:1080px; height:1920px; transform-origin:center center; overflow:hidden; background:var(--fundo); }
+.screen{ position:absolute; inset:0; display:none; background-size:100% 100%; }
+.screen.active{ display:block; animation:entra .35s ease; }
+@keyframes entra{ from{opacity:0} to{opacity:1} }
+.hotspot{ position:absolute; cursor:pointer; border-radius:100px; }
+.hotspot:active{ background:rgba(255,255,255,.15); }
+
+#screen-abertura{ background-image:url(assets/abertura.jpg); }
+#screen-cadastro, #screen-jogo, #screen-fim, #screen-ranking{ background-image:url(assets/jogo.jpg); }
+
+/* ---------- botoes e paineis ---------- */
+.btn{ display:block; width:100%; border:5px solid #ff5a5f; border-radius:80px; cursor:pointer;
+      font-family:inherit; font-weight:900; font-size:58px; color:#fff; padding:22px 0;
+      background:linear-gradient(#22c246,#0a7d27); box-shadow:0 0 26px rgba(38,216,74,.5), inset 0 4px 0 rgba(255,255,255,.3);
+      text-shadow:0 4px 0 rgba(0,0,0,.3); }
+.btn:active{ transform:scale(.97); }
+.btn.sec{ background:rgba(0,0,0,.35); border-color:var(--verde); font-size:42px; padding:18px 0; box-shadow:0 0 18px rgba(38,216,74,.3); }
+
+.painel{ position:absolute; left:60px; right:60px; top:870px; bottom:150px; background:rgba(5,16,10,.93);
+         border:5px solid var(--verde); border-radius:50px; box-shadow:0 0 40px rgba(38,216,74,.4);
+         padding:46px 60px; display:flex; flex-direction:column; }
+.painel h1{ font-weight:900; font-style:italic; font-size:64px; text-align:center; text-transform:uppercase; }
+.painel .sub{ font-size:32px; font-weight:600; text-align:center; margin:8px 0 30px; color:#bfe9c6; }
+
+.campo{ margin-bottom:20px; }
+.campo label{ display:block; font-size:30px; font-weight:800; text-transform:uppercase; letter-spacing:2px; margin:0 0 8px 14px; color:#9df5a8; }
+.campo input{ width:100%; font-family:inherit; font-size:42px; font-weight:700; color:#fff; padding:18px 30px; border-radius:30px;
+              border:4px solid #1d5a28; background:#0c2414; outline:none; }
+.campo input::placeholder{ color:#4f7a58; }
+.campo input:focus{ border-color:var(--verde); }
+.campo input.erro{ border-color:var(--vermelho); }
+.campo .msg{ display:none; color:#ff6b6b; font-size:27px; font-weight:700; margin:6px 0 0 16px; }
+.campo .msg.show{ display:block; }
+
+.pill-ranking{ position:absolute; left:50%; transform:translateX(-50%); top:1680px; white-space:nowrap; cursor:pointer;
+               background:rgba(4,14,8,.85); border:4px solid var(--verde); border-radius:50px; padding:12px 44px;
+               font-size:34px; font-weight:800; box-shadow:0 0 20px rgba(38,216,74,.4); }
+
+/* ---------- placar ---------- */
+.hud{ position:absolute; top:866px; height:96px; border-radius:48px; background:rgba(4,14,8,.9); border:4px solid var(--verde);
+      box-shadow:0 0 18px rgba(38,216,74,.35); display:flex; align-items:center; justify-content:center; gap:14px;
+      font-size:38px; font-weight:600; }
+.hud b{ font-weight:900; font-size:46px; }
+#hudPontosBox{ left:40px; width:390px; }
+#hudTempoBox{ right:40px; width:390px; }
+#hudTempoBox.alerta{ border-color:var(--vermelho); box-shadow:0 0 22px rgba(227,38,43,.6); }
+#hudTempoBox.alerta b{ color:#ff6b6b; }
+#progresso{ position:absolute; left:470px; top:844px; width:140px; height:140px; }
+#progresso svg{ position:absolute; inset:0; transform:rotate(-90deg); }
+#progresso .txt{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:38px; font-weight:900; }
+
+/* ---------- pergunta ---------- */
+#pergunta{ position:absolute; left:40px; right:40px; top:1010px; height:310px; background:linear-gradient(#ffffff,#e9efe9);
+           border-radius:26px; border-bottom:8px solid var(--verde); box-shadow:0 0 30px rgba(38,216,74,.35);
+           display:flex; align-items:center; gap:30px; padding:0 44px; color:#10200f; }
+#pergunta .ico{ flex:0 0 96px; height:96px; border-radius:50%; background:var(--verde-esc); color:#fff; font-size:58px;
+                display:flex; align-items:center; justify-content:center; }
+#pergunta .linha{ flex:0 0 4px; align-self:stretch; margin:50px 0; background:#10200f; opacity:.6; }
+#pergTexto{ font-size:46px; font-weight:800; line-height:1.18; }
+#pergTexto.longa{ font-size:40px; }
+
+#respostas{ position:absolute; left:40px; right:40px; top:1360px; display:flex; flex-direction:column; gap:18px; }
+.resp{ height:86px; border-radius:43px; border:4px solid var(--verde); background:rgba(4,20,10,.92);
+       box-shadow:0 0 16px rgba(38,216,74,.35), inset 0 0 18px rgba(38,216,74,.12);
+       display:flex; align-items:center; padding:0 40px; font-size:40px; font-weight:700; cursor:pointer; transition:transform .1s; }
+.resp:active{ transform:scale(.98); }
+.resp .l{ font-weight:900; margin-right:18px; color:#7dff93; }
+.resp.certa{ background:linear-gradient(#2ee34e,#0c8f2a); border-color:#c8ffd2; box-shadow:0 0 30px rgba(46,227,78,.8); }
+.resp.certa .l{ color:#fff; }
+.resp.errada{ background:linear-gradient(#ff4b4f,#a8161a); border-color:#ffc1c2; box-shadow:0 0 30px rgba(227,38,43,.8); }
+.resp.errada .l{ color:#fff; }
+.resp.apaga{ opacity:.35; }
+#respostas.travado .resp{ pointer-events:none; }
+
+/* ---------- retorno de acerto / erro ---------- */
+.retorno{ position:absolute; left:90px; top:1000px; width:900px; height:450px; z-index:5; pointer-events:none;
+          opacity:0; transform:scale(.7); transition:all .3s cubic-bezier(.3,.7,.3,1.4); }
+.retorno.show{ opacity:1; transform:scale(1); }
+#veu{ position:absolute; left:0; right:0; top:990px; bottom:0; z-index:4; pointer-events:none; opacity:0; transition:opacity .3s;
+       background:radial-gradient(ellipse at 50% 30%, rgba(0,0,0,.82), rgba(0,0,0,.55) 70%); }
+#veu.show{ opacity:1; }
+#retCerta{ background:url(assets/correta.png) center/100% 100% no-repeat; }
+#retCerta .bonus{ position:absolute; left:0; right:0; bottom:-80px; text-align:center; font-size:56px; font-weight:900; font-style:italic;
+                  color:#ffe14a; text-shadow:0 0 18px rgba(0,0,0,.8), 0 4px 0 #000; }
+#retErrada{ display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+#retErrada .caixa{ width:860px; padding:120px 40px 40px; margin-top:80px; border-radius:50px; background:rgba(40,6,8,.95);
+                   border:5px solid #ff5a5f; box-shadow:0 0 50px rgba(227,38,43,.7); position:relative; }
+#retErrada .x{ position:absolute; left:50%; top:-90px; transform:translateX(-50%); width:180px; height:180px; border-radius:50%;
+               background:radial-gradient(#ff5a5f,#a8161a); border:8px solid #2a0507; box-shadow:0 0 40px rgba(227,38,43,.9);
+               font-size:120px; font-weight:900; line-height:170px; }
+#retErrada h2{ font-size:68px; font-weight:900; font-style:italic; }
+#retErrada p{ font-size:36px; font-weight:600; margin-top:12px; color:#ffd5d6; }
+#retErrada p b{ color:#fff; font-weight:900; }
+
+/* ---------- fim ---------- */
+.fim-stats{ display:flex; flex-direction:column; gap:18px; margin:0 0 30px; }
+#screen-fim .painel, #screen-cadastro .painel{ bottom:60px; padding-top:38px; padding-bottom:40px; }
+.fim-linha{ display:flex; align-items:center; justify-content:space-between; padding:14px 40px; border-radius:36px;
+            background:#0c2414; border:4px solid #1d5a28; font-size:40px; font-weight:700; }
+.fim-linha b{ font-size:64px; font-weight:900; font-style:italic; color:#5dff74; }
+.fim-linha.destaque{ border-color:var(--verde); box-shadow:0 0 24px rgba(38,216,74,.4); }
+.fim-linha.destaque b{ font-size:84px; color:#ffe14a; }
+
+/* ---------- ranking ---------- */
+.rank-lista{ flex:1; overflow:hidden; }
+.rank-linha{ display:flex; align-items:center; gap:22px; padding:14px 26px; margin-bottom:12px; border-radius:26px;
+             background:#0c2414; border:3px solid #1d5a28; }
+.rank-linha.p1{ border-color:#ffd23f; } .rank-linha.p2{ border-color:#d6dde0; } .rank-linha.p3{ border-color:#e3965a; }
+.rank-pos{ width:76px; font-size:42px; font-weight:900; font-style:italic; color:var(--verde); }
+.rank-nome{ flex:1; font-size:36px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.15; }
+.rank-nome small{ display:block; font-size:25px; font-weight:600; color:#9df5a8; }
+.rank-pts{ font-size:44px; font-weight:900; font-style:italic; }
+.rank-vazio{ text-align:center; font-size:38px; padding:70px 0; color:#9df5a8; }
+.btn-export{ position:absolute; right:30px; top:30px; width:72px; height:72px; border-radius:50%; border:3px solid #1d5a28;
+             color:var(--verde); font-size:40px; font-weight:900; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+
+#demoSelo{ position:absolute; left:50%; top:1790px; transform:translateX(-50%); display:none; z-index:20; white-space:nowrap;
+           background:var(--vermelho); color:#fff; border-radius:50px; padding:16px 60px; font-size:42px; font-weight:900; font-style:italic;
+           box-shadow:0 0 40px rgba(227,38,43,.7); animation:pisca 1.4s ease-in-out infinite; }
+#demoSelo.show{ display:block; }
+@keyframes pisca{ 50%{ transform:translateX(-50%) scale(1.06); } }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- ===================== ABERTURA ===================== -->
+  <section class="screen active" id="screen-abertura">
+    <div class="hotspot" style="left:180px; top:1480px; width:710px; height:180px;" onclick="irPara('cadastro')"></div>
+    <!-- o rodape da arte ("Tema do Quiz") ocupa o pe da tela; o ranking fica logo acima -->
+    <div class="pill-ranking" style="top:1398px; padding:8px 36px; font-size:30px;" onclick="irPara('ranking')">🏆 RANKING DO DIA</div>
+  </section>
+
+  <!-- ===================== CADASTRO ===================== -->
+  <section class="screen" id="screen-cadastro">
+    <div class="painel">
+      <h1>Antes de jogar</h1>
+      <p class="sub">Preencha seus dados para participar</p>
+      <form id="formCadastro" novalidate>
+        <div class="campo">
+          <label for="campoNome">Nome</label>
+          <input type="text" id="campoNome" placeholder="Seu nome" autocomplete="off" maxlength="40">
+          <div class="msg" id="erroNome">Digite seu nome.</div>
+        </div>
+        <div class="campo">
+          <label for="campoTelefone">Telefone</label>
+          <input type="tel" id="campoTelefone" placeholder="(00) 00000-0000" autocomplete="off" maxlength="15">
+          <div class="msg" id="erroTelefone">Digite um telefone válido.</div>
+        </div>
+        <div class="campo">
+          <label for="campoEmail">E-mail</label>
+          <input type="email" id="campoEmail" placeholder="seu@email.com" autocomplete="off">
+          <div class="msg" id="erroEmail">Digite um e-mail válido.</div>
+        </div>
+        <button type="submit" class="btn" style="margin-top:20px;">JOGAR</button>
+        <button type="button" class="btn sec" style="margin-top:22px;" onclick="irPara('abertura')">VOLTAR</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===================== JOGO ===================== -->
+  <section class="screen" id="screen-jogo">
+    <div class="hud" id="hudPontosBox">🏆 Pontos: <b id="hudPontos">0</b></div>
+    <div id="progresso">
+      <svg viewBox="0 0 140 140"><circle cx="70" cy="70" r="60" fill="rgba(4,14,8,.92)" stroke="#1d5a28" stroke-width="10"/>
+        <circle id="progArco" cx="70" cy="70" r="60" fill="none" stroke="#26d84a" stroke-width="10" stroke-linecap="round"
+                stroke-dasharray="377" stroke-dashoffset="377"/></svg>
+      <div class="txt" id="progTxt">1/10</div>
+    </div>
+    <div class="hud" id="hudTempoBox">⏱ Tempo: <b id="hudTempo">00:20</b></div>
+
+    <div id="pergunta"><div class="ico">🌎</div><div class="linha"></div><div id="pergTexto"></div></div>
+    <div id="respostas"></div>
+
+    <div id="veu"></div>
+    <div class="retorno" id="retCerta"><div class="bonus" id="retBonus">+100</div></div>
+    <div class="retorno" id="retErrada"><div class="caixa"><div class="x">✕</div>
+      <h2 id="retErrTitulo">Resposta Errada!</h2><p id="retErrTexto"></p></div></div>
+  </section>
+
+  <!-- ===================== FIM ===================== -->
+  <section class="screen" id="screen-fim">
+    <div class="painel">
+      <h1>Fim de jogo!</h1>
+      <p class="sub" id="fimSub">Veja como você foi</p>
+      <div class="fim-stats">
+        <div class="fim-linha destaque">⭐ Pontuação <b id="fimPontos">0</b></div>
+        <div class="fim-linha">✅ Acertos <b id="fimAcertos">0/10</b></div>
+        <div class="fim-linha">⏱ Tempo <b id="fimTempo">00:00</b></div>
+      </div>
+      <div style="flex:1"></div>
+      <button class="btn" onclick="proximoJogador()">JOGAR NOVAMENTE</button>
+      <button class="btn sec" style="margin-top:24px;" onclick="irPara('ranking')">🏆 VER RANKING</button>
+    </div>
+  </section>
+
+  <!-- ===================== RANKING ===================== -->
+  <section class="screen" id="screen-ranking">
+    <div class="painel">
+      <!-- botao da equipe do evento: baixa os cadastros deste totem em CSV -->
+      <div class="btn-export" onclick="exportarCadastros()" title="Baixar cadastros">&#8595;</div>
+      <h1>Ranking do dia</h1>
+      <p class="sub">Mais pontos e menos tempo</p>
+      <div class="rank-lista" id="rankLista"></div>
+      <button class="btn" style="margin-top:20px;" onclick="proximoJogador()">VOLTAR AO INÍCIO</button>
+    </div>
+  </section>
+
+  <div id="demoSelo">DEMONSTRAÇÃO · TOQUE PARA JOGAR</div>
+</div>
+
+<script>
+/* =========================================================
+   CONFIGURACAO
+========================================================= */
+const CFG = {
+  PERGUNTAS_POR_JOGO: 10,
+  TEMPO_PERGUNTA:   20,     // segundos por pergunta
+  PONTOS_ACERTO:    100,
+  BONUS_POR_SEGUNDO: 5,     // segundos que sobraram x 5 (ate +100 por pergunta)
+  RETORNO_MS:       1800,   // quanto tempo o "Resposta Correta!" fica na tela
+  INATIVIDADE_MS:   25000,
+  DEMO_ABERTURA_MS: 20000,
+  DEMO_CADASTRO_MS: 45000
+};
+
+/* Banco de perguntas: a primeira opcao e sempre a certa (a ordem e embaralhada
+   na hora). Para trocar ou acrescentar, e so seguir o mesmo formato. */
+const PERGUNTAS = [
+  ['Qual é o país conhecido como a “Terra do Cinema”, sede do famoso Hollywood?', 'Estados Unidos', 'França', 'Itália', 'Canadá'],
+  ['“Bollywood”, uma das maiores indústrias de cinema do mundo, fica em qual país?', 'Índia', 'Paquistão', 'Tailândia', 'Egito'],
+  ['O Festival de Cannes, um dos mais famosos do cinema, acontece em qual país?', 'França', 'Itália', 'Espanha', 'Bélgica'],
+  ['O Festival de Veneza, o festival de cinema mais antigo do mundo, acontece em qual país?', 'Itália', 'França', 'Grécia', 'Portugal'],
+  ['A Berlinale é o grande festival de cinema de qual país?', 'Alemanha', 'Áustria', 'Suíça', 'Holanda'],
+  ['O filme “Parasita”, vencedor do Oscar de Melhor Filme, é de qual país?', 'Coreia do Sul', 'Japão', 'China', 'Vietnã'],
+  ['Os irmãos Lumière, pioneiros do cinema, eram de qual país?', 'França', 'Inglaterra', 'Estados Unidos', 'Alemanha'],
+  ['O filme “Cidade de Deus” é de qual país?', 'Brasil', 'Argentina', 'Portugal', 'México'],
+  ['O Studio Ghibli, de “A Viagem de Chihiro”, é de qual país?', 'Japão', 'Coreia do Sul', 'China', 'Estados Unidos'],
+  ['Com qual filme o Brasil ganhou o Oscar de Melhor Filme Internacional em 2025?', 'Ainda Estou Aqui', 'Central do Brasil', 'Cidade de Deus', 'O Auto da Compadecida'],
+  ['Qual atriz brasileira foi indicada ao Oscar por “Central do Brasil”?', 'Fernanda Montenegro', 'Fernanda Torres', 'Sônia Braga', 'Glória Pires'],
+  ['A trilogia “O Senhor dos Anéis” foi filmada em qual país?', 'Nova Zelândia', 'Austrália', 'Irlanda', 'Canadá'],
+  ['O filme “A Vida é Bela”, vencedor de 3 Oscars, é de qual país?', 'Itália', 'França', 'Espanha', 'Argentina'],
+  ['Charlie Chaplin, um dos maiores nomes do cinema mudo, nasceu em qual país?', 'Inglaterra', 'Estados Unidos', 'França', 'Irlanda'],
+  ['“Roma”, de Alfonso Cuarón, é um filme de qual país?', 'México', 'Itália', 'Espanha', 'Colômbia'],
+  ['A Universidade de Oxford fica em qual país?', 'Inglaterra', 'Estados Unidos', 'Irlanda', 'Escócia'],
+  ['A Universidade Harvard fica em qual país?', 'Estados Unidos', 'Inglaterra', 'Canadá', 'Austrália'],
+  ['A Universidade de Coimbra, uma das mais antigas do mundo, fica em qual país?', 'Portugal', 'Espanha', 'Brasil', 'Itália'],
+  ['A Universidade de Bolonha, a mais antiga do mundo ocidental, fica em qual país?', 'Itália', 'França', 'Espanha', 'Alemanha'],
+  ['A Universidade de Salamanca, fundada em 1218, fica em qual país?', 'Espanha', 'Portugal', 'México', 'Itália'],
+  ['O método Montessori foi criado por uma educadora de qual país?', 'Itália', 'Suíça', 'França', 'Alemanha'],
+  ['Paulo Freire, patrono da educação brasileira, nasceu em qual estado?', 'Pernambuco', 'Bahia', 'São Paulo', 'Rio de Janeiro'],
+  ['Qual país nórdico é famoso no mundo todo pela qualidade da sua educação pública?', 'Finlândia', 'Islândia', 'Groenlândia', 'Estônia'],
+  ['Os Prêmios Nobel de Literatura, Física e Química são entregues em qual país?', 'Suécia', 'Noruega', 'Suíça', 'Dinamarca'],
+  ['“Nollywood”, uma das indústrias de cinema que mais produzem filmes no mundo, é de qual país?', 'Nigéria', 'Gana', 'Quênia', 'África do Sul'],
+  ['Walt Disney, criador do Mickey Mouse, nasceu em qual país?', 'Estados Unidos', 'Canadá', 'Inglaterra', 'Austrália']
+];
+const CADASTRO_KEY = 'vsQuizCadastros';
+const RANKING_KEY  = 'vsQuizRanking';
+
+/* =========================================================
+   PALCO
+========================================================= */
+function ajustaPalco(){
+  const s = Math.min(innerWidth / 1080, innerHeight / 1920);
+  document.getElementById('stage').style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+}
+ajustaPalco();
+addEventListener('resize', ajustaPalco);
+
+/* =========================================================
+   NAVEGACAO E INATIVIDADE
+========================================================= */
+let telaAtual = 'abertura';
+function irPara(t){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + t).classList.add('active');
+  telaAtual = t;
+  if(t === 'ranking') desenhaRanking();
+  if(t === 'cadastro') limpaCadastro();
+  if(t !== 'jogo') paraPartida();
+  if(t === 'fim' || t === 'ranking') agendaVolta(); else cancelaVolta();
+  if(t === 'abertura') agendaDemo(CFG.DEMO_ABERTURA_MS);
+  else if(t === 'cadastro') agendaDemo(CFG.DEMO_CADASTRO_MS);
+  else cancelaDemo();
+}
+let timerVolta = null;
+function agendaVolta(){ cancelaVolta(); timerVolta = setTimeout(proximoJogador, CFG.INATIVIDADE_MS); }
+function cancelaVolta(){ if(timerVolta){ clearTimeout(timerVolta); timerVolta = null; } }
+function proximoJogador(){ jogador = null; irPara('abertura'); }
+
+['pointerdown','keydown'].forEach(ev => document.addEventListener(ev, (e) => {
+  if(!e.isTrusted) return;
+  if(demoAtiva){ e.stopPropagation(); e.preventDefault(); saiDaDemo(); return; }
+  if(timerVolta) agendaVolta();
+  if(timerDemo) agendaDemo();
+}, true));
+
+/* =========================================================
+   CADASTRO
+========================================================= */
+let jogador = null;
+function limpaCadastro(){
+  ['campoNome','campoTelefone','campoEmail'].forEach(id => { const el = document.getElementById(id); el.value = ''; el.classList.remove('erro'); });
+  document.querySelectorAll('#formCadastro .msg').forEach(m => m.classList.remove('show'));
+}
+function mascaraTelefone(v){
+  const d = v.replace(/\D/g,'').slice(0,11);
+  if(d.length <= 2) return d.length ? '(' + d : '';
+  if(d.length <= 6) return '(' + d.slice(0,2) + ') ' + d.slice(2);
+  if(d.length <= 10) return '(' + d.slice(0,2) + ') ' + d.slice(2,6) + '-' + d.slice(6);
+  return '(' + d.slice(0,2) + ') ' + d.slice(2,7) + '-' + d.slice(7);
+}
+document.getElementById('campoTelefone').addEventListener('input', e => e.target.value = mascaraTelefone(e.target.value));
+function lerLista(chave, padrao){ try{ const v = JSON.parse(localStorage.getItem(chave)); return v == null ? padrao : v; }catch(e){ return padrao; } }
+function gravar(chave, valor){ try{ localStorage.setItem(chave, JSON.stringify(valor)); }catch(e){} }
+
+document.getElementById('formCadastro').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const nomeEl = document.getElementById('campoNome'), telEl = document.getElementById('campoTelefone'), mailEl = document.getElementById('campoEmail');
+  const nome = nomeEl.value.trim(), tel = telEl.value.trim(), email = mailEl.value.trim();
+  const ok = { Nome:nome.length >= 2, Telefone:/^\d{10,11}$/.test(tel.replace(/\D/g,'')), Email:/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) };
+  [['Nome',nomeEl],['Telefone',telEl],['Email',mailEl]].forEach(([k,el]) => {
+    el.classList.toggle('erro', !ok[k]); document.getElementById('erro' + k).classList.toggle('show', !ok[k]);
+  });
+  if(!ok.Nome || !ok.Telefone || !ok.Email) return;
+  const lista = lerLista(CADASTRO_KEY, []);
+  lista.push({ data:new Date().toISOString(), nome, telefone:tel, email });
+  gravar(CADASTRO_KEY, lista);
+  jogador = { nome };
+  document.activeElement && document.activeElement.blur();
+  irPara('jogo');
+  comecaPartida();
+});
+
+/* =========================================================
+   JOGO
+========================================================= */
+let estado = null;
+const LETRAS = ['A','B','C','D'];
+function embaralha(a){ a = a.slice(); for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; }
+function mmss(s){ s = Math.max(0, Math.floor(s)); return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
+
+function comecaPartida(){
+  paraPartida();
+  const qs = embaralha(PERGUNTAS).slice(0, CFG.PERGUNTAS_POR_JOGO).map(q => {
+    const certa = q[1];
+    return { texto:q[0], opcoes:embaralha(q.slice(1)), certa };
+  });
+  estado = { qs, i:-1, pontos:0, acertos:0, tempoTotal:0, fim:false, raf:0, timers:[] };
+  atualizaHud();
+  proximaPergunta();
+}
+
+function paraPartida(){
+  if(!estado) return;
+  cancelAnimationFrame(estado.raf);
+  estado.timers.forEach(clearTimeout);
+  estado.fim = true;
+  document.querySelectorAll('.retorno, #veu').forEach(r => r.classList.remove('show'));
+}
+function depois(ms, fn){ const t = setTimeout(fn, ms); estado.timers.push(t); return t; }
+
+function proximaPergunta(){
+  estado.i++;
+  if(estado.i >= estado.qs.length){ terminaPartida(); return; }
+  const q = estado.qs[estado.i];
+  const pt = document.getElementById('pergTexto');
+  pt.textContent = q.texto;
+  pt.classList.toggle('longa', q.texto.length > 75);
+  const box = document.getElementById('respostas');
+  box.classList.remove('travado');
+  box.innerHTML = '';
+  q.opcoes.forEach((op, k) => {
+    const b = document.createElement('div');
+    b.className = 'resp';
+    b.innerHTML = '<span class="l">' + LETRAS[k] + ')</span>';
+    b.appendChild(document.createTextNode(op));
+    b.dataset.op = op;
+    b.addEventListener('click', () => { if(!demoAtiva) responde(b); });
+    box.appendChild(b);
+  });
+  document.getElementById('progTxt').textContent = (estado.i + 1) + '/' + estado.qs.length;
+  document.getElementById('progArco').style.strokeDashoffset = 377 * (1 - (estado.i + 1) / estado.qs.length);
+  estado.respondida = false;
+  estado.inicioQ = performance.now();
+  estado.restante = CFG.TEMPO_PERGUNTA;
+  estado.raf = requestAnimationFrame(relogio);
+  if(demoAtiva) demoResponde();
+}
+
+function relogio(agora){
+  if(!estado || estado.fim || estado.respondida) return;
+  estado.restante = CFG.TEMPO_PERGUNTA - (agora - estado.inicioQ) / 1000;
+  atualizaHud();
+  if(estado.restante <= 0){ responde(null); return; }
+  estado.raf = requestAnimationFrame(relogio);
+}
+
+function atualizaHud(){
+  document.getElementById('hudPontos').textContent = estado.pontos;
+  const r = estado.restante == null ? CFG.TEMPO_PERGUNTA : estado.restante;
+  document.getElementById('hudTempo').textContent = mmss(Math.ceil(r));
+  document.getElementById('hudTempoBox').classList.toggle('alerta', r <= 5);
+}
+
+function responde(btn){
+  if(!estado || estado.fim || estado.respondida) return;
+  estado.respondida = true;
+  cancelAnimationFrame(estado.raf);
+  const q = estado.qs[estado.i];
+  const gasto = Math.min(CFG.TEMPO_PERGUNTA, (performance.now() - estado.inicioQ) / 1000);
+  estado.tempoTotal += gasto;
+  const box = document.getElementById('respostas');
+  box.classList.add('travado');
+  const botoes = Array.from(box.children);
+  const certoBtn = botoes.find(b => b.dataset.op === q.certa);
+  const acertou = btn && btn === certoBtn;
+
+  botoes.forEach(b => { if(b !== certoBtn && b !== btn) b.classList.add('apaga'); });
+  certoBtn.classList.add('certa');
+  if(btn && !acertou) btn.classList.add('errada');
+
+  if(acertou){
+    const bonus = Math.max(0, Math.round((CFG.TEMPO_PERGUNTA - gasto) * CFG.BONUS_POR_SEGUNDO));
+    const ganho = CFG.PONTOS_ACERTO + bonus;
+    estado.pontos += ganho; estado.acertos++;
+    atualizaHud();
+    document.getElementById('retBonus').textContent = '+' + ganho + ' pontos';
+    depois(350, () => { document.getElementById('veu').classList.add('show'); document.getElementById('retCerta').classList.add('show'); });
+  } else {
+    document.getElementById('retErrTitulo').textContent = btn ? 'Resposta Errada!' : 'Tempo Esgotado!';
+    document.getElementById('retErrTexto').innerHTML = 'A resposta certa era: <b></b>';
+    document.querySelector('#retErrTexto b').textContent = q.certa;
+    depois(350, () => { document.getElementById('veu').classList.add('show'); document.getElementById('retErrada').classList.add('show'); });
+  }
+  depois(350 + CFG.RETORNO_MS, () => {
+    document.querySelectorAll('.retorno, #veu').forEach(r => r.classList.remove('show'));
+    depois(250, proximaPergunta);
+  });
+}
+
+function terminaPartida(){
+  const tempo = estado.tempoTotal;
+  paraPartida();
+  if(demoAtiva){ demoProximaRodada(); return; }    // demo nunca grava nada
+  salvaRanking(estado.pontos, tempo, estado.acertos);
+  document.getElementById('fimPontos').textContent = estado.pontos;
+  document.getElementById('fimAcertos').textContent = estado.acertos + '/' + estado.qs.length;
+  document.getElementById('fimTempo').textContent = mmss(tempo);
+  const a = estado.acertos, n = estado.qs.length;
+  document.getElementById('fimSub').textContent =
+    a === n ? 'Gabaritou! Parabéns!' : a >= n * 0.7 ? 'Mandou muito bem!' : a >= n * 0.4 ? 'Boa! Dá pra ir mais longe.' : 'Que tal tentar de novo?';
+  irPara('fim');
+}
+
+/* =========================================================
+   RANKING DO DIA
+========================================================= */
+function hoje(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function lerRanking(){ const r = lerLista(RANKING_KEY, null); return (r && r.data === hoje()) ? r : { data:hoje(), lista:[] }; }
+function salvaRanking(pontos, tempo, acertos){
+  const r = lerRanking(), d = new Date();
+  r.lista.push({ nome:(jogador && jogador.nome) || 'Jogador', pontos, acertos, tempo:Math.round(tempo),
+                 hora:String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') });
+  r.lista.sort((a,b) => b.pontos - a.pontos || a.tempo - b.tempo);
+  r.lista = r.lista.slice(0, 10);
+  gravar(RANKING_KEY, r);
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function desenhaRanking(){
+  const r = lerRanking(), el = document.getElementById('rankLista');
+  if(!r.lista.length){ el.innerHTML = '<div class="rank-vazio">Ninguém jogou hoje ainda.<br>Seja o primeiro!</div>'; return; }
+  el.innerHTML = r.lista.map((x, i) =>
+    '<div class="rank-linha' + (i < 3 ? ' p' + (i+1) : '') + '">' +
+      '<div class="rank-pos">' + (i+1) + 'º</div>' +
+      '<div class="rank-nome">' + esc(x.nome) + '<small>' + x.acertos + ' acertos · ' + mmss(x.tempo) + ' · ' + x.hora + '</small></div>' +
+      '<div class="rank-pts">' + x.pontos + '</div>' +
+    '</div>').join('');
+}
+
+/* =========================================================
+   EXPORTAR CADASTROS (CSV para o Excel em portugues)
+========================================================= */
+function exportarCadastros(){
+  const lista = lerLista(CADASTRO_KEY, []);
+  if(!lista.length){ alert('Nenhum cadastro guardado neste totem ainda.'); return; }
+  const campos = ['data','nome','telefone','email'], titulos = ['Data','Nome','Telefone','E-mail'];
+  const q = v => '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"';
+  const linhas = [titulos.map(q).join(';')].concat(lista.map(i => campos.map(c => q(i[c])).join(';')));
+  const blob = new Blob(['﻿' + linhas.join('\r\n')], { type:'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'cadastros-quiz-' + hoje() + '.csv';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+}
+
+/* =========================================================
+   MODO DEMONSTRACAO - o totem se joga sozinho quando fica parado.
+   O robo "pensa" uns segundos e acerta a maioria. Nada e gravado;
+   qualquer toque de verdade sai da demo e volta pra abertura.
+========================================================= */
+let demoAtiva = false, timerDemo = null, demoJanela = CFG.DEMO_ABERTURA_MS, demoTimer = null;
+function agendaDemo(ms){ cancelaDemo(); if(ms) demoJanela = ms; timerDemo = setTimeout(entraNaDemo, demoJanela); }
+function cancelaDemo(){ if(timerDemo){ clearTimeout(timerDemo); timerDemo = null; } }
+function entraNaDemo(){
+  cancelaDemo();
+  demoAtiva = true; jogador = null;
+  document.getElementById('demoSelo').classList.add('show');
+  irPara('jogo');
+  comecaPartida();
+}
+function demoResponde(){
+  clearTimeout(demoTimer);
+  demoTimer = setTimeout(() => {
+    if(!demoAtiva || !estado || estado.fim || estado.respondida) return;
+    const q = estado.qs[estado.i], botoes = Array.from(document.querySelectorAll('#respostas .resp'));
+    const certo = botoes.find(b => b.dataset.op === q.certa);
+    const erros = botoes.filter(b => b !== certo);
+    responde(Math.random() < 0.75 ? certo : erros[Math.floor(Math.random()*erros.length)]);
+  }, 2200 + Math.random()*2500);
+}
+function demoProximaRodada(){
+  clearTimeout(demoTimer);
+  demoTimer = setTimeout(() => { if(demoAtiva) comecaPartida(); }, 1500);
+}
+function saiDaDemo(){
+  demoAtiva = false;
+  clearTimeout(demoTimer);
+  paraPartida();
+  document.getElementById('demoSelo').classList.remove('show');
+  irPara('abertura');
+}
+
+agendaDemo(CFG.DEMO_ABERTURA_MS);
+</script>
+</body>
+</html>
